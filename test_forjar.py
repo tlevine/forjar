@@ -1,12 +1,13 @@
-import nose.tools as n
-import forjar
+import datetime
 import unittest
+
+import nose.tools as n
+
+from forjar import Base, Column, Forjaria, Integer, ForeignKey, DateTime, DAY
 
 class Trip(Base):
     __tablename__ = 'trips'
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    boat_id = Column(Integer, ForeignKey("boats.id"), nullable=False)
     date = Column(DateTime, default=datetime.datetime.utcnow)
     start = Column(DateTime, default=datetime.datetime.utcnow)
     hours = Column(Integer, default=2)
@@ -27,8 +28,8 @@ class Trip(Base):
 class TestBase(unittest.TestCase):
     def setUp(self):
         start = datetime.datetime(2013, 7, 1)
-        end = datetime.datetime.(2013, 7, 3)
-        self.forjaria = forjar.Forjaria(start, stop, 'sqlite:///tmp/test_forjar.db')
+        stop  = datetime.datetime(2013, 7, 3)
+        self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db')
 
     def test_forge_next(self):
         'TestBase.forge_next should ordinarily forge i rows.'
@@ -44,6 +45,9 @@ class TestBase(unittest.TestCase):
         self.forjaria.session.commit()
         print Trip.__count__
         assert False
-        # n.assert_equal(Trip.__count__, 100)
 
-        for i, time in [(i, start + datetime.timedelta(microseconds=i*period)) for i in range(0, iterations)]:
+    def test_no_commit(self):
+        'TestBase.forge_next should not commit.'
+        self.forjaria.forge_next(Trip, i = 100)
+        self.forjaria.session.rollback()
+        n.assert_equal(Trip.__count__, 0)
