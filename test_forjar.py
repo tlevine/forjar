@@ -23,6 +23,26 @@ class Trip(Base):
     variance = 0
 
 class TestForjaria(unittest.TestCase):
+
+    def test_not_resume(self):
+        'The database should be cleared when resume is False.'
+        start = datetime.datetime(2013, 5, 1)
+
+        stop1  = datetime.datetime(2013, 7, 1)
+        forjaria = Forjaria(start, stop1, 'sqlite:////tmp/test_forjar.db', resume = False)
+        forjaria.forge_base(Trip)
+
+        trip1 = forjaria.session.query(Trip).get(1)
+        trip1.hours = 9001
+        forjaria.session.add(trip1)
+        forjaria.session.commit()
+
+        stop2  = datetime.datetime(2013, 9, 1)
+        forjaria = Forjaria(start, stop2, 'sqlite:////tmp/test_forjar.db', resume = False)
+        forjaria.forge_base(Trip)
+
+        n.assert_not_equal(forjaria.session.query(Trip).get(1).hours, 9001)
+
     def test_resume(self):
         'The database should not be cleared when resume is True.'
         start = datetime.datetime(2013, 5, 1)
