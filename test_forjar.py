@@ -4,7 +4,8 @@ import unittest
 
 import nose.tools as n
 
-from forjar import Base, Column, Forjaria, Integer, ForeignKey, DateTime, DAY
+from forjar import Base, Forjaria, DAY
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, MetaData, Boolean, Date, Enum, Float, Numeric, PickleType, Text, Time
 
 class Trip(Base):
     __tablename__ = 'trips'
@@ -49,7 +50,7 @@ class TestBase(unittest.TestCase):
         n.assert_is_none(self.forjaria.forge_next(Trip))
 
     def test_forge_not_last_returns_not_none(self):
-        'TestBase.forge_next should return None when it reaches the end.'
+        'TestBase.forge_next should return None only when it reaches the end.'
         self.forjaria.forge_next(Trip)
         n.assert_is_not_none(self.forjaria.forge_next(Trip))
 
