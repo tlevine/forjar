@@ -1,4 +1,5 @@
 import datetime
+import random
 import unittest
 
 import nose.tools as n
@@ -15,27 +16,23 @@ class Trip(Base):
     def forge(self, session, date=None, basetime=None):
         self.start = date + datetime.timedelta(days=random.randint(2, 20))
         self.hours = random.randint(2, 12)
-        self.user_id = get_random(User, session, basetime=basetime)
-        self.boat_id = get_random(Boat, session, basetime=basetime)
 
     period = DAY
-    @classmethod
-    def ntimes(self, i, time):
-        return 1*pow(1.006, i)
-
-    variance = ntimes
+    ntimes = 1
+    variance = 0
 
 class TestBase(unittest.TestCase):
     def setUp(self):
         start = datetime.datetime(2013, 5, 1)
         stop  = datetime.datetime(2013, 7, 1)
-        self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db', i = 100)
+        self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db', commit_every = 50)
 
     def test_forge_next(self):
-        'TestBase.forge_next should ordinarily forge i rows.'
+        'TestBase.forge_next should ordinarily forge i iterations.'
         self.forjaria.forge_next(Trip)
         self.forjaria.session.commit()
-        n.assert_equal(Trip.__count__, 100)
+        n.assert_equal(self.forjaria.i, 50)
+        n.assert_equal(self.forjaria.count_base(Trip), 50)
 
     def test_forge_last(self):
         'TestBase.forge_next should stop forging at the end.'
@@ -43,11 +40,12 @@ class TestBase(unittest.TestCase):
         self.forjaria.session.commit()
         self.forjaria.forge_next(Trip)
         self.forjaria.session.commit()
-        print Trip.__count__
-        assert False
+        n.assert_equal(self.forjaria.i, 61)
+        n.assert_equal(self.forjaria.count_base(Trip), 61)
 
     def test_no_commit(self):
         'TestBase.forge_next should not commit.'
         self.forjaria.forge_next(Trip)
         self.forjaria.session.rollback()
-        n.assert_equal(Trip.__count__, 0)
+        n.assert_equal(self.forjaria.i, 0)
+        n.assert_equal(self.forjaria.count_base(Trip), 0)

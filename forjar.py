@@ -99,7 +99,7 @@ def get_last(Table):
 
 class Forjaria:
 
-    def __init__(self, start, stop, engine_url, i = None):
+    def __init__(self, start, stop, engine_url, i = None, commit_every = 100):
 
         self.engine_url = engine_url
         self.engine = sqlalchemy.create_engine(engine_url)
@@ -116,6 +116,8 @@ class Forjaria:
             self.i = 0
         else:
             self.i = i
+
+        self.commit_every = commit_every
 
     def create_tables(self):
         Base.metadata.create_all(self.engine)
@@ -167,6 +169,12 @@ class Forjaria:
         for i, time in [(i, start + datetime.timedelta(microseconds=i*period)) for i in range(0, iterations)]:
             if i < self.i:
                 continue
+            elif i + 1 == iterations:
+                self.i = iterations
+            elif i == (self.i + self.commit_every):
+                self.i = self.i + self.commit_every
+                break
+
             v = int(variance(i, time))
             t = int(ntimes(i, time)) + random.randint(-v, v)
             print Base.__tablename__, i, 'of', iterations, '-', t
@@ -175,6 +183,7 @@ class Forjaria:
                 date = time + datetime.timedelta(microseconds=dt)
                 date_index[Base.__tablename__][time] = Base.count
                 func(date=date, forgesession=self.session, basetime=time)
+
 
 
 def forjar_main(main, start=datetime.datetime.now() - datetime.timedelta(days=365), stop=datetime.datetime.now(), engine_url="sqlite:///forjar.db"):
