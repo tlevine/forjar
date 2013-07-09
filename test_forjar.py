@@ -43,6 +43,16 @@ class TestBase(unittest.TestCase):
         n.assert_equal(self.forjaria.i, 61)
         n.assert_equal(self.forjaria.count_base(Trip), 61)
 
+    def test_forge_last_returns_none(self):
+        'TestBase.forge_next should return None when it reaches the end.'
+        self.forjaria.forge_next(Trip)
+        n.assert_is_none(self.forjaria.forge_next(Trip))
+
+    def test_forge_not_last_returns_not_none(self):
+        'TestBase.forge_next should return None when it reaches the end.'
+        self.forjaria.forge_next(Trip)
+        n.assert_is_not_none(self.forjaria.forge_next(Trip))
+
     def test_no_commit(self):
         'TestBase.forge_next should not commit.'
         self.forjaria.forge_next(Trip)
