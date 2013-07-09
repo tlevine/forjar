@@ -61,3 +61,26 @@ class TestForjaria(unittest.TestCase):
         forjaria.forge_base(Trip)
 
         n.assert_equal(forjaria.session.query(Trip).get(1).hours, 9001)
+
+    def test_skip_on_resume(self):
+        'On a resume, the previous dates should be skipped.'
+        start = datetime.datetime(2013, 5, 1)
+
+        stop1  = datetime.datetime(2013, 7, 1)
+        stop2  = datetime.datetime(2013, 9, 1)
+
+        forjaria = Forjaria(start, stop1, 'sqlite:////tmp/test_forjar.db', resume = False)
+        forjaria.forge_base(Trip)
+        forjaria.session.commit()
+
+        forjaria = Forjaria(start, stop2, 'sqlite:////tmp/test_forjar.db', resume = True)
+        forjaria.forge_base(Trip)
+        c1 = forjaria.count_base(Trip)
+        forjaria.session.commit()
+
+        forjaria = Forjaria(start, stop2, 'sqlite:////tmp/test_forjar.db', resume = False)
+        forjaria.forge_base(Trip)
+        c2 = forjaria.count_base(Trip)
+        forjaria.session.commit()
+
+        n.assert_equal(c1, c2)
