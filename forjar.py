@@ -99,7 +99,7 @@ def get_last(Table):
 
 class Forjaria:
 
-    def __init__(self, start, stop, engine_url):
+    def __init__(self, start, stop, engine_url, resume = False):
 
         self.engine_url = engine_url
         self.engine = sqlalchemy.create_engine(engine_url)
@@ -110,8 +110,9 @@ class Forjaria:
         self.bases = []
         self.clockstart = None
 
-        self.drop_tables()
-        self.create_tables()
+        if not resume:
+            self.drop_tables()
+            self.create_tables()
 
     def forge_all(locs, verbose=True):
         # TODO XXX: Fix this function... it doesn't work
