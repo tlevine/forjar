@@ -111,6 +111,7 @@ class Forjaria:
         if clean:
             self.drop_tables()
             self.create_tables()
+            self.i = 0
 
         self.commit_every = commit_every
 
