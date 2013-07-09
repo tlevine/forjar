@@ -9,6 +9,8 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, MetaData, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative.api import _declarative_constructor
 
+from sqlalchemy import func
+from math import ceil
 
 names = pickle.load(open('loaders/names.p', 'rb'))
 sites = pickle.load(open('loaders/sites.p', 'rb'))
@@ -147,15 +149,13 @@ class Forjaria:
 
         self.bases.append(Base)
         date_index[Base.__tablename__] = {}
-        def f(**kwargs):
-            return Base(**kwargs)
 
         ntimes = ntimes or Base.ntimes
         period = period or Base.period
         variance = variance or Base.variance
-        return self.forge(f, ntimes, period, variance, Base)
+        return self.forge(Base, ntimes, period, variance, Base)
 
-    def forge(self, func, ntimes, period, variance, Base=None):
+    def forge(self, BBase, ntimes, period, variance, Base=None):
 
         # the variance can be a function
         var = variance
@@ -168,7 +168,19 @@ class Forjaria:
 
         iterations = int((self.stop-self.start).total_seconds()/(period/SECOND))
         start = self.start
+
+        epoch = datetime.datetime.utcfromtimestamp(0)
+        prevdate = self.session.query(func.max(BBase.date)).scalar()
+        if prevdate == None:
+            inclusive_time_cutoff = epoch
+        else:
+            prevdate_microseconds = int(1e6 * (prevdate - epoch).total_seconds())
+            prevdate_milliseconds_ceil = period * ceil(prevdate_microseconds / period)
+            inclusive_time_cutoff = datetime.datetime.utcfromtimestamp(prevdate_milliseconds_ceil / 1e6)
+
         for i, time in [(i, start + datetime.timedelta(microseconds=i*period)) for i in range(0, iterations)]:
+            if time <= inclusive_time_cutoff:
+                continue
             v = int(variance(i, time))
             t = int(ntimes(i, time)) + random.randint(-v, v)
             # print Base.__tablename__, i, 'of', iterations, '-', t
@@ -176,7 +188,7 @@ class Forjaria:
             for dt in dts:
                 date = time + datetime.timedelta(microseconds=dt)
                 date_index[Base.__tablename__][time] = Base.count
-                func(date=date, forgesession=self.session, basetime=time)
+                BBase(date=date, forgesession=self.session, basetime=time)
 
         self.session.commit()
 
