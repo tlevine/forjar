@@ -99,7 +99,7 @@ def get_last(Table):
 
 class Forjaria:
 
-    def __init__(self, start, stop, engine_url):
+    def __init__(self, start, stop, engine_url, i = None):
 
         self.engine_url = engine_url
         self.engine = sqlalchemy.create_engine(engine_url)
@@ -110,17 +110,12 @@ class Forjaria:
         self.bases = []
         self.clockstart = None
 
-        self.drop_tables()
-        self.create_tables()
-
-    def forge_all(locs, verbose=True):
-        # TODO XXX: Fix this function... it doesn't work
-        bases = [l for k, l in locs if k != 'Base' and type(l) == type(Base)]
-        for Base in bases:
-            self.forge_base(Base)
-
-        if verbose:
-            self.print_results()
+        if i == None:
+            self.drop_tables()
+            self.create_tables()
+            self.i = 0
+        else:
+            self.i = i
 
     def create_tables(self):
         Base.metadata.create_all(self.engine)
@@ -140,12 +135,14 @@ class Forjaria:
         """Returns the # of rows for a Base Table given the Base."""
         return self.session.query(Base).count()
 
-    def forge_base(self, Base, ntimes=None, period=None, variance=None):
+    def forge_next(self, Base, ntimes=None, period=None, variance=None):
         if not self.clockstart:
             self.clockstart = datetime.datetime.now()
 
-        self.bases.append(Base)
-        date_index[Base.__tablename__] = {}
+        if Base not in self.bases:
+            self.bases.append(Base)
+            date_index[Base.__tablename__] = {}
+
         def f(**kwargs):
             return Base(**kwargs)
 
@@ -168,6 +165,8 @@ class Forjaria:
         iterations = int((self.stop-self.start).total_seconds()/(period/SECOND))
         start = self.start
         for i, time in [(i, start + datetime.timedelta(microseconds=i*period)) for i in range(0, iterations)]:
+            if i < self.i:
+                continue
             v = int(variance(i, time))
             t = int(ntimes(i, time)) + random.randint(-v, v)
             print Base.__tablename__, i, 'of', iterations, '-', t
@@ -176,8 +175,6 @@ class Forjaria:
                 date = time + datetime.timedelta(microseconds=dt)
                 date_index[Base.__tablename__][time] = Base.count
                 func(date=date, forgesession=self.session, basetime=time)
-
-        self.session.commit()
 
 
 def forjar_main(main, start=datetime.datetime.now() - datetime.timedelta(days=365), stop=datetime.datetime.now(), engine_url="sqlite:///forjar.db"):

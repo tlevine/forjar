@@ -27,27 +27,27 @@ class Trip(Base):
 
 class TestBase(unittest.TestCase):
     def setUp(self):
-        start = datetime.datetime(2013, 7, 1)
-        stop  = datetime.datetime(2013, 7, 3)
-        self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db')
+        start = datetime.datetime(2013, 5, 1)
+        stop  = datetime.datetime(2013, 7, 1)
+        self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db', i = 100)
 
     def test_forge_next(self):
         'TestBase.forge_next should ordinarily forge i rows.'
-        self.forjaria.forge_next(Trip, i = 100)
+        self.forjaria.forge_next(Trip)
         self.forjaria.session.commit()
         n.assert_equal(Trip.__count__, 100)
 
     def test_forge_last(self):
         'TestBase.forge_next should stop forging at the end.'
-        self.forjaria.forge_next(Trip, i = 100)
+        self.forjaria.forge_next(Trip)
         self.forjaria.session.commit()
-        self.forjaria.forge_next(Trip, i = 100)
+        self.forjaria.forge_next(Trip)
         self.forjaria.session.commit()
         print Trip.__count__
         assert False
 
     def test_no_commit(self):
         'TestBase.forge_next should not commit.'
-        self.forjaria.forge_next(Trip, i = 100)
+        self.forjaria.forge_next(Trip)
         self.forjaria.session.rollback()
         n.assert_equal(Trip.__count__, 0)
