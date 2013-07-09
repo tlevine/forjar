@@ -28,6 +28,20 @@ class TestBase(unittest.TestCase):
         stop  = datetime.datetime(2013, 7, 1)
         self.forjaria = Forjaria(start, stop, 'sqlite:////tmp/test_forjar.db', commit_every = 50)
 
+    @n.nottest
+    def test_set_param(self):
+        'I should be able to set and get `forjaria.i`.'
+        self.forjaria.i = 3
+        n.assert_equal(self.forjaria.i, 3)
+
+    @n.nottest
+    def test_rollback_param(self):
+        self.forjaria.i = 3
+        self.forjaria.session.commit()
+        self.forjaria.i = 8
+        self.forjaria.session.rollback()
+        n.assert_equal(self.forjaria.i, 3)
+
     def test_forge_next(self):
         'TestBase.forge_next should ordinarily forge i iterations.'
         self.forjaria.forge_next(Trip)

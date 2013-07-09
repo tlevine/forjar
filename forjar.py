@@ -8,7 +8,7 @@ import sqlalchemy
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, MetaData, Boolean, Date, Enum, Float, Numeric, PickleType, Text, Time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative.api import _declarative_constructor
-
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 names = pickle.load(open('loaders/names.p', 'rb'))
 sites = pickle.load(open('loaders/sites.p', 'rb'))
@@ -47,8 +47,6 @@ class Base(object):
 
     def post_forge(self, session, **kwargs):
         pass
-
-
 
 Base = declarative_base(cls=Base, constructor=None )
 
@@ -99,7 +97,7 @@ def get_last(Table):
 
 class Forjaria:
 
-    def __init__(self, start, stop, engine_url, i = None, commit_every = 100):
+    def __init__(self, start, stop, engine_url, clean = True, commit_every = 100):
 
         self.engine_url = engine_url
         self.engine = sqlalchemy.create_engine(engine_url)
@@ -110,17 +108,37 @@ class Forjaria:
         self.bases = []
         self.clockstart = None
 
-        if i == None:
+        if clean:
             self.drop_tables()
             self.create_tables()
-            self.i = 0
-        else:
-            self.i = i
 
         self.commit_every = commit_every
 
+    def _get_param(self, key):
+        TYPES = {'i': int}
+        value = self.session.execute(
+            'SELECT value FROM forjar WHERE key = :key', {'key':key}).scalar()
+        if value == None:
+            raise NameError(u'name \'%s\' not defined' % key)
+        else:
+            return TYPES[key](value)
+
+    def _set_param(self, key, value):
+        self.session.execute(
+            'INSERT OR REPLACE INTO forjar (key, value) VALUES (:key, :value)',
+            {'key': key, 'value': value})
+
+    @property
+    def i(self):
+        return self._get_param('i')
+
+    @i.setter
+    def i(self, value):
+        return self._set_param('i', value)
+
     def create_tables(self):
         Base.metadata.create_all(self.engine)
+        self.session.execute('CREATE TABLE IF NOT EXISTS forjar (key TEXT NOT NULL, value TEXT NOT NULL);')
 
     def drop_tables(self):
         # drop all tables in the database
