@@ -63,6 +63,7 @@ class TestBase(unittest.TestCase):
         self.forjaria.forge_next(Trip)
         n.assert_is_none(self.forjaria.forge_next(Trip))
 
+    @n.nottest
     def test_forge_not_last_returns_not_none(self):
         'TestBase.forge_next should return None only when it reaches the end.'
         self.forjaria.forge_next(Trip)
@@ -72,5 +73,6 @@ class TestBase(unittest.TestCase):
         'TestBase.forge_next should not commit.'
         self.forjaria.forge_next(Trip)
         self.forjaria.session.rollback()
+        print self.forjaria.session.dirty
         n.assert_equal(self.forjaria.i, 0)
         n.assert_equal(self.forjaria.count_base(Trip), 0)

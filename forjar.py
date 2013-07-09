@@ -36,9 +36,6 @@ class Base(object):
         _declarative_constructor(self, **kwargs)
         self.__class__.count = self.__class__.count + 1
         forgesession.add(self)
-        # commit every 100
-        if not self.__class__.count % 100:
-           forgesession.commit()
 
         self.post_forge(forgesession, **kwargs)
 
@@ -46,6 +43,13 @@ class Base(object):
         pass
 
     def post_forge(self, session, **kwargs):
+        pass
+
+class ForjarParams(Base):
+    __tablename__ = 'forjar'
+    key = Column(String(40), primary_key = True)
+    value = Column(String(40))
+    def __init__(self):
         pass
 
 Base = declarative_base(cls=Base, constructor=None )
@@ -117,17 +121,17 @@ class Forjaria:
 
     def _get_param(self, key):
         TYPES = {'i': int}
-        value = self.session.execute(
-            'SELECT value FROM forjar WHERE key = :key', {'key':key}).scalar()
+        value = self.session.query(ForjarParams).get(key).value
         if value == None:
             raise NameError(u'name \'%s\' not defined' % key)
         else:
             return TYPES[key](value)
 
     def _set_param(self, key, value):
-        self.session.execute(
-            'INSERT OR REPLACE INTO forjar (key, value) VALUES (:key, :value)',
-            {'key': key, 'value': value})
+        p = ForjarParams()
+        p.key = key
+        p.value = value
+        self.session.add(p)
 
     @property
     def i(self):
@@ -139,7 +143,6 @@ class Forjaria:
 
     def create_tables(self):
         Base.metadata.create_all(self.engine)
-        self.session.execute('CREATE TABLE IF NOT EXISTS forjar (key TEXT NOT NULL, value TEXT NOT NULL);')
 
     def drop_tables(self):
         # drop all tables in the database
